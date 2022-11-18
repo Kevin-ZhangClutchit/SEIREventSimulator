@@ -18,12 +18,17 @@ class SEIR_network:
         self.ei_rate = ei_rate
         self.ir_rate = ir_rate
         self.rate_dict = {"se_rate": self.se_rate, "ei_rate": self.ei_rate, "ir_rate": self.ir_rate}
-        self.nodes_num = nodes_num
+        self.nodes_num = nodes_num #initialize nodes_num
+        self.actual_nodes_num = nodes_num #actual_nodes_num
         self.edge_list = []  # edge pair of (a b)
+        self.remove_nodes_list = []
 
 
         self.graph_nodes_initialize()
         self.graph_edges_random_graph()
+        self.remove_no_degree_nodes()
+        #todo: remove nodes with no degree
+
 
 
     def __str__(self):
@@ -32,7 +37,11 @@ class SEIR_network:
         print(self.rate_dict)
         print("se_distance", self.se_distance)
         print("nodes_num", self.nodes_num)
+        print("actual nodes_num", self.actual_nodes_num)
         for i in range(0, self.nodes_num):
+            if i in self.remove_nodes_list:
+                continue
+            print("Nodes id:",i)
             for j in node_attribute_list:
                 print(j + ":", self.graph.nodes[i][j])
         print(self.edge_list)
@@ -63,15 +72,23 @@ class SEIR_network:
             # todo: make it uniform
             node_a = 0
             node_b = 0
+            # avoid self loop
             while node_a == node_b:
                 node_a = random.randint(0, self.nodes_num)
                 node_b = random.randint(0, self.nodes_num)
-                #avoid multiple edges
-                if ((node_a,node_b) in self.edge_list or (node_b,node_a) in self.edge_list):
+                # avoid multiple edges
+                if (node_a, node_b) in self.edge_list or (node_b, node_a) in self.edge_list:
                     node_a = node_b
-            self.edge_list.append((node_a,node_b))
-            self.graph.add_edge(node_a,node_b,distance=random.uniform(0,self.se_distance))#todo: have a complex one
+            self.edge_list.append((node_a, node_b))
+            self.graph.add_edge(node_a, node_b, distance=random.uniform(0, self.se_distance))#todo: have a complex one
 
+    def remove_no_degree_nodes(self):
+        for i in range(0, self.nodes_num):
+            if self.graph.degree[i] == 0:
+                print("Remove node: "+ str(i))
+                self.remove_nodes_list.append(i)
+                self.graph.remove_node(i)
+                self.actual_nodes_num-=1
 
 G = nx.Graph()
 G.add_node(1)
