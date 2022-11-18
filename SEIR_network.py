@@ -3,7 +3,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import random
 
-node_attribute_list = ["state", "identity"]
+node_attribute_list = ["state", "identity", "is_updated"]#is_updated refers to state change, not distance change
 SI_rate = [0.8, 0.2]  # Suspected,Infectious
 rv_rate = [0.7, 0.3]  # resident,visitor
 network_parameter_list = ["se_rate", "se_distance", "ei_rate", "ir_rate", "nodes_num"]
@@ -30,6 +30,8 @@ class SEIR_network:
         self.graph_nodes_initialize()
         self.graph_edges_random_graph()
         self.remove_no_degree_nodes()
+
+        self.initial_pos = nx.spring_layout(self.graph)
 
         self.identity_register()
 
@@ -67,9 +69,11 @@ class SEIR_network:
                 nodes_attribute.append("resident")
             else:
                 nodes_attribute.append("visitor")
+            nodes_attribute.append(False)
             self.graph.add_node(i)
             for j in range(0, len(node_attribute_list)):
                 self.graph.nodes[i][node_attribute_list[j]] = nodes_attribute[j]
+
 
     def graph_edges_random_graph(self):
         # random graph in Modelling Strong Control Measures for Epidemic Propagation With Networks—A COVID-19 Case Study
@@ -114,8 +118,9 @@ class SEIR_network:
         res = [i for i in self.graph.nodes() if i not in self.remove_nodes_list and self.graph.nodes[i].get("state") == state]
         return res
 
-    def graph_draw(self, verbose_level=0):
+    def graph_draw(self, verbose_level=0,epochs=0):
         G = self.graph
+        pos = self.initial_pos
         if verbose_level == 0:
             nx.draw(G,with_labels=True)
             plt.show()
@@ -123,7 +128,6 @@ class SEIR_network:
             nx.draw_networkx_edges(G,pos=nx.kamada_kawai_layout(G))
             plt.show()
         elif verbose_level == 1:
-            pos=nx.spring_layout(G)
             #draw nodes blue:yellow:red:green
             nx.draw_networkx_nodes(G, pos=pos, nodelist=self.get_state_list("S"),node_color="#1f78b4")
             nx.draw_networkx_nodes(G, pos=pos, nodelist=self.get_state_list("E"),node_color="#ffff33")
@@ -138,13 +142,59 @@ class SEIR_network:
                 resident_dict.update({i: "R"+str(i)})
             for i in self.visitor_list:
                 visitor_dict.update({i: "V"+str(i)})
-            nx.draw_networkx_labels(G, pos=pos,labels=resident_dict,font_color="#ffffff",font_size=8)
+            nx.draw_networkx_labels(G, pos=pos,labels=resident_dict,font_color="#190033",font_size=8)
             nx.draw_networkx_labels(G, pos=pos, labels=visitor_dict, font_color="#000000",font_size=8)
-            plt.show()
+            #plt.show()
     def graph_move(self):
         print("todo!")
-        #todo:within each round, each node choose to random get close to or get away from its neibours
+        #first setup all nodes as not updated in this round
+        for i in range(0, self.nodes_num):
+            nx.set_node_attributes(self.graph,values=False,name="is_updated")
+        #todo:first is the change of state judgement
+        for i in range(0, self.nodes_num):
+            if i in self.remove_nodes_list:
+                continue
+            # has been update, no need for update state
+            if not self.graph.nodes(data=True)[i]["is_updated"]:
 
+                if self.graph.nodes(data=True)[i]["state"] == "S":
+                    # S state, check wether neighbors have I
+                    infectious_neighbors = [n for n in self.graph.neighbors(i) if self.graph.nodes[n].get("state") == "I"]
+                    infectious_distance = [self.graph.get_edge_data(i, j).get("distance") for j in infectious_neighbors]
+                    if len(infectious_neighbors) > 0:
+                        for j in infectious_distance:
+                            if j < self.se_distance:
+                                rn=random.randint(0,100)/100
+                                if rn < self.se_rate:
+                                    self.graph.nodes(data=True)[i]["is_updated"]=True
+                                    self.graph.nodes(data=True)[i]["state"]="E"
+                                    print("nodes "+str(i)+" get exposed!")
+
+                if self.graph.nodes(data=True)[i]["state"] == "E":
+                    # E state, check whether will go to I
+                    rn=random.randint(0,100)/100
+                    if rn < self.ei_rate:
+                        self.graph.nodes(data=True)[i]["is_updated"]=True
+                        self.graph.nodes(data=True)[i]["state"]="I"
+                        print("Exposed node "+str(i)+" get infectious!")
+
+                if self.graph.nodes(data=True)[i]["state"] == "I":
+                    # I state, check whether will go to R
+                    # todo: I to check nearby E to save
+                    rn=random.randint(0,100)/100
+                    if rn < self.ir_rate:
+                        self.graph.nodes(data=True)[i]["is_updated"]=True
+                        self.graph.nodes(data=True)[i]["state"]="R"
+                        print("Infectious node "+str(i)+" get recovered!")
+
+                #todo: recover node remove
+
+
+
+
+
+
+        #todo:within each round, each node choose to random get close to or get away from its neighbours
 
 
 
@@ -162,5 +212,11 @@ nx.draw(G,with_labels=True)
 a = SEIR_network(nodes_num=30)
 
 #print(a)
-a.graph_draw(verbose_level=1)
-print(a.get_state_list("I"))
+for num_epochs in range(0,20):
+    plt.clf()
+    save_fn = './Net_epoch_{:d}'.format(num_epochs) + '.png'
+    a.graph_draw(verbose_level=1,epochs=num_epochs)
+    plt.savefig(save_fn)
+    a.graph_move()
+#print(a)
+#print(a.get_state_list("I"))
