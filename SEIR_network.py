@@ -62,6 +62,7 @@ class SEIR_network:
                 nodes_attribute.append("S")
             else:
                 nodes_attribute.append("I")
+            rn = random.randint(0, 100) / 100
             if rn <= rv_rate[0]:
                 nodes_attribute.append("resident")
             else:
@@ -140,6 +141,9 @@ class SEIR_network:
             nx.draw_networkx_labels(G, pos=pos,labels=resident_dict,font_color="#ffffff",font_size=8)
             nx.draw_networkx_labels(G, pos=pos, labels=visitor_dict, font_color="#000000",font_size=8)
             plt.show()
+    def graph_move(self):
+        print("todo!")
+        #todo:within each round, each node choose to random get close to or get away from its neibours
 
 
 
