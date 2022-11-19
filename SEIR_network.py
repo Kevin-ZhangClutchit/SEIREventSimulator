@@ -2,7 +2,7 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 import random
-
+debug_mode = True
 node_attribute_list = ["state", "identity", "is_updated"]#is_updated refers to state change, not distance change
 SI_rate = [0.8, 0.2]  # Suspected,Infectious
 rv_rate = [0.7, 0.3]  # resident,visitor
@@ -11,7 +11,7 @@ valid_state = ["S", "E", "I", "R"]
 
 class SEIR_network:
     def __init__(self, se_rate=0.2, se_distance=5, ei_rate=0.2, ir_rate=0.2, nodes_num=30):
-        #initialize parameter
+        # initialize parameter
         self.graph = nx.Graph(name="region")
         self.se_rate = se_rate
         self.se_distance = se_distance
@@ -118,7 +118,7 @@ class SEIR_network:
         res = [i for i in self.graph.nodes() if i not in self.remove_nodes_list and self.graph.nodes[i].get("state") == state]
         return res
 
-    def graph_draw(self, verbose_level=0,epochs=0):
+    def graph_draw(self, verbose_level=0):
         G = self.graph
         pos = self.initial_pos
         if verbose_level == 0:
@@ -146,11 +146,11 @@ class SEIR_network:
             nx.draw_networkx_labels(G, pos=pos, labels=visitor_dict, font_color="#000000",font_size=8)
             #plt.show()
     def graph_move(self):
-        print("todo!")
-        #first setup all nodes as not updated in this round
+
+        # setup all nodes as not updated in this round
         for i in range(0, self.nodes_num):
             nx.set_node_attributes(self.graph,values=False,name="is_updated")
-        #todo:first is the change of state judgement
+        # the change of state judgement
         for i in range(0, self.nodes_num):
             if i in self.remove_nodes_list:
                 continue
@@ -169,6 +169,7 @@ class SEIR_network:
                                     self.graph.nodes(data=True)[i]["is_updated"]=True
                                     self.graph.nodes(data=True)[i]["state"]="E"
                                     print("nodes "+str(i)+" get exposed!")
+                                    break
 
                 if self.graph.nodes(data=True)[i]["state"] == "E":
                     # E state, check whether will go to I
@@ -181,6 +182,18 @@ class SEIR_network:
                 if self.graph.nodes(data=True)[i]["state"] == "I":
                     # I state, check whether will go to R
                     # todo: I to check nearby E to save
+                    exposed_neighbors = [n for n in self.graph.neighbors(i) if
+                                            self.graph.nodes[n].get("state") == "E"]
+                    exposed_distance = [self.graph.get_edge_data(i, j).get("distance") for j in exposed_neighbors]
+                    if len(exposed_neighbors) > 0:
+                        for j,k in list(zip(exposed_distance,exposed_neighbors)):
+                            if j < self.se_distance and not self.graph.nodes(data=True)[k]["is_updated"]:
+                                rn=random.randint(0,100)/100
+                                if rn < self.se_rate:
+                                    self.graph.nodes(data=True)[k]["is_updated"]=True
+                                    self.graph.nodes(data=True)[k]["state"]="E"
+                                    print("nodes "+str(k)+" get exposed due to closed to infectious node" +str(i)+"!")
+
                     rn=random.randint(0,100)/100
                     if rn < self.ir_rate:
                         self.graph.nodes(data=True)[i]["is_updated"]=True
@@ -188,13 +201,69 @@ class SEIR_network:
                         print("Infectious node "+str(i)+" get recovered!")
 
                 #todo: recover node remove
+                if self.graph.nodes(data=True)[i]["state"] == "R":
+                    j=1
+
+        # within each round, each node choose to random get close to or get away from its neighbours
+        for i in range(0, self.nodes_num):
+            if i in self.remove_nodes_list:
+                continue
+            self.node_move(i)
 
 
 
 
 
 
-        #todo:within each round, each node choose to random get close to or get away from its neighbours
+
+    def node_move(self,node):
+        if (debug_mode):
+            print("Current calling: node_move")
+            print("Current at Node " + str(node))
+            print("Current Node state: " + self.graph.nodes(data=True)[node]["state"])
+        neighbors = [n for n in self.graph.neighbors(node)]
+        distance = [self.graph.get_edge_data(node, j).get("distance") for j in neighbors]
+
+        state = self.graph.nodes(data=True)[node]["state"]
+        # recovered node will do thing
+        if state == "R":
+            return
+        # suspectible and exposed node will random choose to get close to or get away from neighbours
+        elif state == "S" or "E":
+            for neighbor, dis in list(zip(neighbors, distance)):
+                if debug_mode:
+                    print("old distance to Node "+str(neighbor)+": "+str(self.graph.get_edge_data(node,neighbor)))
+                rn1 = random.uniform(0, 1) #get close to or get away
+                if rn1 <= 0.5: #get close to
+                    rn_distance = random.uniform(0, dis/2)
+                    self.graph[node][neighbor]["distance"] = dis - rn_distance
+                else:
+                    rn_distance = random.uniform(0, dis)
+                    self.graph[node][neighbor]["distance"] = dis + rn_distance
+                if debug_mode:
+                    print("new distance to Node "+str(neighbor)+": "+str(self.graph.get_edge_data(node,neighbor)))
+        # infectious node will try to get away from neighbours at most of time but rarely get close to
+        else:
+            assert state == "I"
+            for neighbor, dis in list(zip(neighbors, distance)):
+                if debug_mode:
+                    print("old distance: "+str(self.graph.get_edge_data(node,neighbor)))
+                rn1 = random.uniform(0, 1) #get close to or get away
+                if rn1 <= 0.1: #get close to
+                    rn_distance = random.uniform(0, dis)
+                    self.graph[node][neighbor]["distance"] = dis - rn_distance
+                else:
+                    rn_distance = random.uniform(0, dis)
+                    self.graph[node][neighbor]["distance"] = dis + rn_distance
+                if debug_mode:
+                    print("new distance: "+str(self.graph.get_edge_data(node,neighbor)))
+
+
+
+
+
+
+
 
 
 
@@ -209,13 +278,13 @@ for node in G.nodes:
 nx.draw(G,with_labels=True)
 '''
 # plt.show()
-a = SEIR_network(nodes_num=30)
+a = SEIR_network(nodes_num=50)
 
 #print(a)
 for num_epochs in range(0,20):
     plt.clf()
-    save_fn = './Net_epoch_{:d}'.format(num_epochs) + '.png'
-    a.graph_draw(verbose_level=1,epochs=num_epochs)
+    save_fn = './result/Net_epoch_{:d}'.format(num_epochs) + '.png'
+    a.graph_draw(verbose_level=1)
     plt.savefig(save_fn)
     a.graph_move()
 #print(a)
