@@ -266,9 +266,6 @@ class SEIR_network:
 
 
 
-
-G = nx.Graph()
-G.add_node(1)
 '''
 for i in node_attribute_list:
     G.nodes[1][i]="E"
@@ -276,7 +273,7 @@ print(G.nodes[1])
 for node in G.nodes:
     print()
 nx.draw(G,with_labels=True)
-'''
+
 # plt.show()
 a = SEIR_network(nodes_num=50)
 
@@ -289,3 +286,4 @@ for num_epochs in range(0,20):
     a.graph_move()
 #print(a)
 #print(a.get_state_list("I"))
+'''
