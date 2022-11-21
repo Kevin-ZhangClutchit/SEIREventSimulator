@@ -2,7 +2,7 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 import random
-debug_mode = True
+debug_mode = False
 node_attribute_list = ["state", "identity", "is_updated"]#is_updated refers to state change, not distance change
 SI_rate = [0.8, 0.2]  # Suspected,Infectious
 rv_rate = [0.7, 0.3]  # resident,visitor
@@ -10,7 +10,7 @@ network_parameter_list = ["se_rate", "se_distance", "ei_rate", "ir_rate", "nodes
 valid_state = ["S", "E", "I", "R"]
 
 class SEIR_network:
-    def __init__(self, se_rate=0.2, se_distance=5, ei_rate=0.2, ir_rate=0.2, nodes_num=30):
+    def __init__(self, se_rate=0.2, se_distance=5, ei_rate=0.2, ir_rate=0.2, nodes_num=30,is_visualize=True):
         # initialize parameter
         self.graph = nx.Graph(name="region")
         self.se_rate = se_rate
@@ -30,8 +30,8 @@ class SEIR_network:
         self.graph_nodes_initialize()
         self.graph_edges_random_graph()
         self.remove_no_degree_nodes()
-
-        self.initial_pos = nx.spring_layout(self.graph)
+        if is_visualize:
+            self.initial_pos = nx.spring_layout(self.graph)
 
         self.identity_register()
 
@@ -172,7 +172,8 @@ class SEIR_network:
                                 if rn < self.se_rate:
                                     self.graph.nodes(data=True)[i]["is_updated"]=True
                                     self.graph.nodes(data=True)[i]["state"]="E"
-                                    print("nodes "+str(i)+" get exposed!")
+                                    if debug_mode:
+                                        print("nodes "+str(i)+" get exposed!")
                                     break
 
                 if self.graph.nodes(data=True)[i]["state"] == "E":
@@ -181,7 +182,8 @@ class SEIR_network:
                     if rn < self.ei_rate:
                         self.graph.nodes(data=True)[i]["is_updated"]=True
                         self.graph.nodes(data=True)[i]["state"]="I"
-                        print("Exposed node "+str(i)+" get infectious!")
+                        if debug_mode:
+                            print("Exposed node "+str(i)+" get infectious!")
 
                 if self.graph.nodes(data=True)[i]["state"] == "I":
                     # I state, check whether will go to R
@@ -196,13 +198,15 @@ class SEIR_network:
                                 if rn < self.se_rate:
                                     self.graph.nodes(data=True)[k]["is_updated"]=True
                                     self.graph.nodes(data=True)[k]["state"]="E"
-                                    print("nodes "+str(k)+" get exposed due to closed to infectious node" +str(i)+"!")
+                                    if debug_mode:
+                                        print("nodes "+str(k)+" get exposed due to closed to infectious node" +str(i)+"!")
 
                     rn=random.randint(0,100)/100
                     if rn < self.ir_rate:
                         self.graph.nodes(data=True)[i]["is_updated"]=True
                         self.graph.nodes(data=True)[i]["state"]="R"
-                        print("Infectious node "+str(i)+" get recovered!")
+                        if debug_mode:
+                            print("Infectious node "+str(i)+" get recovered!")
 
                 #todo: recover node remove
                 if self.graph.nodes(data=True)[i]["state"] == "R":

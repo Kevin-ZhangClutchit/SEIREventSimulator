@@ -14,10 +14,16 @@ class driver:
         self.mode = mode
         self.epochs = epochs
         if network_parameters is None:
-            self.network = SEIR_network.SEIR_network()
+            if mode == "graph":
+                self.network = SEIR_network.SEIR_network()
+            else:
+                self.network = SEIR_network.SEIR_network(is_visualize=False)
         else:
             se_rate, se_distance, ei_rate, ir_rate, nodes_num = network_parameters
-            self.network = SEIR_network.SEIR_network(se_rate, se_distance, ei_rate, ir_rate, nodes_num)
+            if mode == "graph":
+                self.network = SEIR_network.SEIR_network(se_rate, se_distance, ei_rate, ir_rate, nodes_num)
+            else:
+                self.network = SEIR_network.SEIR_network(se_rate, se_distance, ei_rate, ir_rate, nodes_num,is_visualize=False)
 
     def graph_visualize(self, num_epochs, is_save=True):
         assert self.mode == "graph"
@@ -41,7 +47,7 @@ class driver:
                     save_dir='results_s/'):
         fig, ax = plt.subplots()
         ax.set_xlim(0, self.epochs)
-        ylim = max(np.max(s_num_list), np.max(e_num_list), np.max(i_num_list), np.max(r_num_list)) * 1.1
+        ylim = self.network.nodes_num
         ylim_low = 0
         ax.set_ylim(ylim_low, ylim)
         plt.xlabel('# of epoches')
@@ -65,12 +71,12 @@ class driver:
             plt.close()
 
     def statistical_main(self):
-        print("todo")
         s_num_list = []
         e_num_list = []
         i_num_list = []
         r_num_list = []
         for i in range(0, self.epochs):
+            print("epochs: {:d}/{:d}".format(i, self.epochs))
             s_num_list.append(self.network.get_state_number("S"))
             e_num_list.append(self.network.get_state_number("E"))
             i_num_list.append(self.network.get_state_number("I"))
@@ -86,6 +92,6 @@ class driver:
             self.statistical_main()
 
 
-network_para_s=[0.5, 5, 0.5, 0.2, 500]
+network_para_s=[0.8, 3, 0.5, 0.15, 2000]
 a = driver(mode="statistical",epochs=100,network_parameters=network_para_s)
 a.driver_main()
