@@ -1,5 +1,7 @@
 import SEIR_network
 import matplotlib.pyplot as plt
+import os
+import numpy as np
 
 # system variables
 valid_mode = ["statistical", "graph"]
@@ -35,9 +37,47 @@ class driver:
             self.graph_visualize(num_epochs)
             self.network.graph_move()
 
-    
+    def plot_number(self, s_num_list, e_num_list, i_num_list, r_num_list, save=False, show=False,
+                    save_dir='results_s/'):
+        fig, ax = plt.subplots()
+        ax.set_xlim(0, self.epochs)
+        ylim = max(np.max(s_num_list), np.max(e_num_list), np.max(i_num_list), np.max(r_num_list)) * 1.1
+        ylim_low = 0
+        ax.set_ylim(ylim_low, ylim)
+        plt.xlabel('# of epoches')
+        plt.ylabel('People')
+        plt.plot(s_num_list, label='Suspected people number', color="#1f78b4")
+        plt.plot(e_num_list, label='Exposed people number', color="#ffff33")
+        plt.plot(i_num_list, label='Infectious people number', color="#ff0000")
+        plt.plot(r_num_list, label='Recovered people number', color="#00ff00")
+        plt.legend()
+
+        # save figure
+        if save:
+            if not os.path.exists(save_dir):
+                os.mkdir(save_dir)
+            save_fn = save_dir + 'Statistical_Result_{:d}'.format(self.epochs) + '.png'
+            plt.savefig(save_fn)
+
+        if show:
+            plt.show()
+        else:
+            plt.close()
+
     def statistical_main(self):
         print("todo")
+        s_num_list = []
+        e_num_list = []
+        i_num_list = []
+        r_num_list = []
+        for i in range(0, self.epochs):
+            s_num_list.append(self.network.get_state_number("S"))
+            e_num_list.append(self.network.get_state_number("E"))
+            i_num_list.append(self.network.get_state_number("I"))
+            r_num_list.append(self.network.get_state_number("R"))
+            self.network.graph_move()
+        self.plot_number(s_num_list=s_num_list, e_num_list=e_num_list, i_num_list=i_num_list,
+                         r_num_list=r_num_list, save=True)
 
     def driver_main(self):
         if self.mode == "graph":
@@ -46,5 +86,6 @@ class driver:
             self.statistical_main()
 
 
-a = driver()
+network_para_s=[0.5, 5, 0.5, 0.2, 500]
+a = driver(mode="statistical",epochs=100,network_parameters=network_para_s)
 a.driver_main()

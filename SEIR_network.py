@@ -113,6 +113,10 @@ class SEIR_network:
 
         assert len(self.resident_list)+len(self.visitor_list) == self.actual_nodes_num
 
+    def get_state_number(self,state):
+        assert state in valid_state
+        return len(self.get_state_list(state))
+
     def get_state_list(self,state):
         assert state in valid_state
         res = [i for i in self.graph.nodes() if i not in self.remove_nodes_list and self.graph.nodes[i].get("state") == state]
