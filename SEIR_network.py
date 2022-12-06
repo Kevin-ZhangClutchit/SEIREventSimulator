@@ -271,7 +271,25 @@ class SEIR_network:
                 continue
             self.node_move(i, current_day)
 
-    # in event, all nodes will try to gather before
+    '''
+    Idea of node move
+    If not in event mode:
+    both residents and visitors will keep wandering (50% get close to each other and 50% get away from each
+    other if in S and E, in I, they will a high rate to get away from each other. For R, just do nothing, I
+    treat R nodes as meaningless nodes in this mode.
+    In event mode:
+    residents:
+    before event starts: like not in event mode
+    event starts --- event ends: likely to get gather (distance --), I nodes have a lower rate to get away
+    after: like not in event mode
+    visitor:
+    before event starts: get close to neighbours unless in I (R also will get close to neighbours!)
+    event starts --- event ends: likely to get gather (distance --), 
+    I nodes have a lower rate to get away (R also will get close to neighbours!)
+    after: get away (also applied to R)
+    
+    
+    '''
     def node_move(self, node, current_day):
 
         if (debug_mode):
