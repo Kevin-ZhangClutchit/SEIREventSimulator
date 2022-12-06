@@ -91,7 +91,7 @@ class SEIR_network:
                 if (node_a, node_b) in self.edge_list or (node_b, node_a) in self.edge_list:
                     continue
             self.edge_list.append((node_a, node_b))
-            self.graph.add_edge(node_a, node_b, distance=random.uniform(0, self.se_distance))#todo: have a complex one
+            self.graph.add_edge(node_a, node_b, distance=random.uniform(self.se_distance, 1.5 * self.se_distance))#todo: have a complex one
 
     def graph_nodes_identity_rearrange(self):
         central_order_list = sorted(nx.degree_centrality(self.graph).items(),key=lambda x:x[1])
@@ -101,9 +101,9 @@ class SEIR_network:
         for i in range(0,len(central_order_list)):
             node_index = central_order_list[i][0]
             rn = random.randint(0, 100) / 100
-            resident_rate = rv_rate[0]*(self.actual_nodes_num-1)/self.actual_nodes_num*(vistor_number-vistor_count)/vistor_number
-            #the lower centrality, the higher it will be vistor
-            if rn<= resident_rate:
+            resident_rate = rv_rate[0]*(self.actual_nodes_num-i)/self.actual_nodes_num*(vistor_number-vistor_count)/vistor_number
+            #the lower centrality, the higher possibility it will be vistor
+            if rn <= resident_rate:
                 self.graph.nodes[node_index]["identity"] = "visitor"
                 vistor_count += 1
             else:
@@ -116,7 +116,6 @@ class SEIR_network:
             assert self.graph.nodes[i]["identity"] in ["visitor", "resident"]
         print(resident_count,vistor_count)
 
-        # self.graph.nodes[i]["identity"] = "resident" or "visitor"
 
 
     def remove_no_degree_nodes(self):
@@ -149,6 +148,16 @@ class SEIR_network:
         res = [i for i in self.graph.nodes() if i not in self.remove_nodes_list and self.graph.nodes[i].get("state") == state]
         return res
 
+    def get_edge_list_distance(self,is_larger):
+
+        edge_list= [i for i in self.graph.edges(data=True)]
+        if is_larger:
+            res = [i for i in edge_list if i[2].get("distance") > self.se_distance]
+        else:
+            res = [i for i in edge_list if i[2].get("distance") <= self.se_distance]
+        return res
+
+
     def graph_draw(self, verbose_level=0):
         G = self.graph
         pos = self.initial_pos
@@ -165,7 +174,10 @@ class SEIR_network:
             nx.draw_networkx_nodes(G, pos=pos, nodelist=self.get_state_list("I"), node_color="#ff0000")
             nx.draw_networkx_nodes(G, pos=pos, nodelist=self.get_state_list("R"), node_color="#00ff00")
             #draw edges todo:highlight distance < se_distance
-            nx.draw_networkx_edges(G, pos=pos)
+            nx.draw_networkx_edges(G, pos=pos, edgelist=self.get_edge_list_distance(is_larger=True),
+                                   edge_color="#000000")
+            nx.draw_networkx_edges(G, pos=pos, edgelist=self.get_edge_list_distance(is_larger=False),
+                                   edge_color="#cc0000")
             #draw labels
             resident_dict={}
             visitor_dict={}
