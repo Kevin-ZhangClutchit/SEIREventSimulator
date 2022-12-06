@@ -91,7 +91,8 @@ class driver:
         else:
             self.statistical_main()
 
+# "se_rate", "se_distance", "ei_rate", "ir_rate", "nodes_num"
 
-network_para_s=[0.8, 3, 0.5, 0.15, 2000]
-a = driver(mode="statistical",epochs=100,network_parameters=network_para_s)
+network_para_s=[0.8, 3, 0.5, 0.15, 40]
+a = driver(mode="graph",epochs=30,network_parameters=network_para_s)
 a.driver_main()

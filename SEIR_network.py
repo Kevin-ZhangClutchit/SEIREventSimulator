@@ -3,9 +3,10 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import random
 debug_mode = False
+event_mode = True
 node_attribute_list = ["state", "identity", "is_updated"]#is_updated refers to state change, not distance change
 SI_rate = [0.8, 0.2]  # Suspected,Infectious
-rv_rate = [0.7, 0.3]  # resident,visitor
+rv_rate = [0.95, 0.05] if not event_mode else [0.7, 0.3]  # resident,visitor
 network_parameter_list = ["se_rate", "se_distance", "ei_rate", "ir_rate", "nodes_num"]
 valid_state = ["S", "E", "I", "R"]
 
@@ -30,6 +31,7 @@ class SEIR_network:
         self.graph_nodes_initialize()
         self.graph_edges_random_graph()
         self.remove_no_degree_nodes()
+        self.graph_nodes_identity_rearrange()
         if is_visualize:
             self.initial_pos = nx.spring_layout(self.graph)
 
@@ -64,11 +66,10 @@ class SEIR_network:
                 nodes_attribute.append("S")
             else:
                 nodes_attribute.append("I")
-            rn = random.randint(0, 100) / 100
-            if rn <= rv_rate[0]:
-                nodes_attribute.append("resident")
-            else:
-                nodes_attribute.append("visitor")
+
+            # identity will be decided on centrality
+            nodes_attribute.append("undecided")
+
             nodes_attribute.append(False)
             self.graph.add_node(i)
             for j in range(0, len(node_attribute_list)):
@@ -91,6 +92,32 @@ class SEIR_network:
                     continue
             self.edge_list.append((node_a, node_b))
             self.graph.add_edge(node_a, node_b, distance=random.uniform(0, self.se_distance))#todo: have a complex one
+
+    def graph_nodes_identity_rearrange(self):
+        central_order_list = sorted(nx.degree_centrality(self.graph).items(),key=lambda x:x[1])
+        resident_count=0
+        vistor_count=0
+        vistor_number = int(rv_rate[1]*self.actual_nodes_num)
+        for i in range(0,len(central_order_list)):
+            node_index = central_order_list[i][0]
+            rn = random.randint(0, 100) / 100
+            resident_rate = rv_rate[0]*(self.actual_nodes_num-1)/self.actual_nodes_num*(vistor_number-vistor_count)/vistor_number
+            #the lower centrality, the higher it will be vistor
+            if rn<= resident_rate:
+                self.graph.nodes[node_index]["identity"] = "visitor"
+                vistor_count += 1
+            else:
+                self.graph.nodes[node_index]["identity"] = "resident"
+                resident_count += 1
+
+        for i in range(0, self.nodes_num):
+            if i in self.remove_nodes_list:
+                continue
+            assert self.graph.nodes[i]["identity"] in ["visitor", "resident"]
+        print(resident_count,vistor_count)
+
+        # self.graph.nodes[i]["identity"] = "resident" or "visitor"
+
 
     def remove_no_degree_nodes(self):
         for i in range(0, self.nodes_num):
@@ -217,12 +244,6 @@ class SEIR_network:
             if i in self.remove_nodes_list:
                 continue
             self.node_move(i)
-
-
-
-
-
-
 
     def node_move(self,node):
         if (debug_mode):
