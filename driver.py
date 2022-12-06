@@ -19,11 +19,14 @@ class driver:
             else:
                 self.network = SEIR_network.SEIR_network(is_visualize=False)
         else:
-            se_rate, se_distance, ei_rate, ir_rate, nodes_num = network_parameters
+            se_rate, se_distance, ei_rate, ir_rate, nodes_num,event_start_day,\
+            event_days = network_parameters
             if mode == "graph":
-                self.network = SEIR_network.SEIR_network(se_rate, se_distance, ei_rate, ir_rate, nodes_num)
+                self.network = SEIR_network.SEIR_network(se_rate, se_distance, ei_rate, ir_rate, nodes_num,
+                                                         event_start_day, event_days)
             else:
-                self.network = SEIR_network.SEIR_network(se_rate, se_distance, ei_rate, ir_rate, nodes_num,is_visualize=False)
+                self.network = SEIR_network.SEIR_network(se_rate, se_distance, ei_rate, ir_rate, nodes_num,
+                                                         event_start_day, event_days,is_visualize=False)
 
     def graph_visualize(self, num_epochs, is_save=True):
         assert self.mode == "graph"
@@ -41,7 +44,7 @@ class driver:
     def graph_main(self):
         for num_epochs in range(0, self.epochs):
             self.graph_visualize(num_epochs)
-            self.network.graph_move()
+            self.network.graph_move(num_epochs)
 
     def plot_number(self, s_num_list, e_num_list, i_num_list, r_num_list, save=False, show=False,
                     save_dir='results_s/'):
@@ -81,7 +84,7 @@ class driver:
             e_num_list.append(self.network.get_state_number("E"))
             i_num_list.append(self.network.get_state_number("I"))
             r_num_list.append(self.network.get_state_number("R"))
-            self.network.graph_move()
+            self.network.graph_move(i)
         self.plot_number(s_num_list=s_num_list, e_num_list=e_num_list, i_num_list=i_num_list,
                          r_num_list=r_num_list, save=True)
 
@@ -91,8 +94,9 @@ class driver:
         else:
             self.statistical_main()
 
-# "se_rate", "se_distance", "ei_rate", "ir_rate", "nodes_num"
+# "se_rate", "se_distance", "ei_rate", "ir_rate", "nodes_num","event_start_day",
+#                  "event_days"
 
-network_para_s=[0.8, 3, 0.5, 0.15, 40]
+network_para_s=[0.8, 3, 0.5, 0.15, 40,0,6]
 a = driver(mode="graph",epochs=30,network_parameters=network_para_s)
 a.driver_main()

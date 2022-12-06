@@ -11,7 +11,8 @@ network_parameter_list = ["se_rate", "se_distance", "ei_rate", "ir_rate", "nodes
 valid_state = ["S", "E", "I", "R"]
 
 class SEIR_network:
-    def __init__(self, se_rate=0.2, se_distance=5, ei_rate=0.2, ir_rate=0.2, nodes_num=30,is_visualize=True):
+    def __init__(self, se_rate=0.2, se_distance=5, ei_rate=0.2, ir_rate=0.2, nodes_num=30,event_start_day=0,
+                 event_days=6,is_visualize=True):
         # initialize parameter
         self.graph = nx.Graph(name="region")
         self.se_rate = se_rate
@@ -21,6 +22,8 @@ class SEIR_network:
         self.rate_dict = {"se_rate": self.se_rate, "ei_rate": self.ei_rate, "ir_rate": self.ir_rate}
         self.nodes_num = nodes_num #initialize nodes_num
         self.actual_nodes_num = nodes_num #actual_nodes_num
+        self.event_start_day=event_start_day
+        self.event_days=event_days
         self.edge_list = []  # edge pair of (a b)
         self.remove_nodes_list = []
 
@@ -188,7 +191,7 @@ class SEIR_network:
             nx.draw_networkx_labels(G, pos=pos,labels=resident_dict,font_color="#190033",font_size=8)
             nx.draw_networkx_labels(G, pos=pos, labels=visitor_dict, font_color="#000000",font_size=8)
             #plt.show()
-    def graph_move(self):
+    def graph_move(self,current_day):
 
         # setup all nodes as not updated in this round
         for i in range(0, self.nodes_num):
@@ -219,8 +222,8 @@ class SEIR_network:
                     # E state, check whether will go to I
                     rn=random.randint(0,100)/100
                     if rn < self.ei_rate:
-                        self.graph.nodes(data=True)[i]["is_updated"]=True
-                        self.graph.nodes(data=True)[i]["state"]="I"
+                        self.graph.nodes(data=True)[i]["is_updated"] = True
+                        self.graph.nodes(data=True)[i]["state"] = "I"
                         if debug_mode:
                             print("Exposed node "+str(i)+" get infectious!")
 
@@ -235,8 +238,8 @@ class SEIR_network:
                             if j < self.se_distance and not self.graph.nodes(data=True)[k]["is_updated"]:
                                 rn=random.randint(0,100)/100
                                 if rn < self.se_rate:
-                                    self.graph.nodes(data=True)[k]["is_updated"]=True
-                                    self.graph.nodes(data=True)[k]["state"]="E"
+                                    self.graph.nodes(data=True)[k]["is_updated"] = True
+                                    self.graph.nodes(data=True)[k]["state"] = "E"
                                     if debug_mode:
                                         print("nodes "+str(k)+" get exposed due to closed to infectious node" +str(i)+"!")
 
@@ -255,9 +258,11 @@ class SEIR_network:
         for i in range(0, self.nodes_num):
             if i in self.remove_nodes_list:
                 continue
-            self.node_move(i)
+            self.node_move(i,current_day)
 
-    def node_move(self,node):
+    # in event, all nodes will try to gather before
+    def node_move(self,node,current_day):
+
         if (debug_mode):
             print("Current calling: node_move")
             print("Current at Node " + str(node))
@@ -271,26 +276,67 @@ class SEIR_network:
             return
         # suspectible and exposed node will random choose to get close to or get away from neighbours
         elif state == "S" or "E":
-            for neighbor, dis in list(zip(neighbors, distance)):
-                if debug_mode:
-                    print("old distance to Node "+str(neighbor)+": "+str(self.graph.get_edge_data(node,neighbor)))
-                rn1 = random.uniform(0, 1) #get close to or get away
-                if rn1 <= 0.5: #get close to
-                    rn_distance = random.uniform(0, dis/2)
-                    self.graph[node][neighbor]["distance"] = dis - rn_distance
-                else:
-                    rn_distance = random.uniform(0, dis)
-                    self.graph[node][neighbor]["distance"] = dis + rn_distance
-                if debug_mode:
-                    print("new distance to Node "+str(neighbor)+": "+str(self.graph.get_edge_data(node,neighbor)))
+            if current_day < self.event_start_day and event_mode:
+            # before events begin, all visitor nodes will try to gather
+                if self.graph.nodes(data=True)[node]["identity"] == "visitor":
+                    for neighbor, dis in list(zip(neighbors, distance)):
+                        rn_distance = random.uniform(0, 2 * dis / 3)
+                        self.graph[node][neighbor]["distance"] = dis - rn_distance
+                else: # residents will behave as normal
+                    for neighbor, dis in list(zip(neighbors, distance)):
+                        rn1 = random.uniform(0, 1)  # get close to or get away
+                        if rn1 <= 0.5:  # get close to
+                            rn_distance = random.uniform(0,  dis / 2)
+                            self.graph[node][neighbor]["distance"] = dis - rn_distance
+                        else:
+                            rn_distance = random.uniform(0, dis / 2)
+                            self.graph[node][neighbor]["distance"] = dis + rn_distance
+            elif event_mode and self.event_start_day <= current_day <= self.event_days+self.event_start_day:
+            #events begin, all nodes will have a high tendency to gather
+                for neighbor, dis in list(zip(neighbors, distance)):
+                    if debug_mode:
+                        print("old distance to Node "+str(neighbor)+": "+str(self.graph.get_edge_data(node,neighbor)))
+                    rn1 = random.uniform(0, 1)  # get close to or get away
+                    close_tendency = 0.8
+                    if rn1 <= close_tendency:  # get close to
+                        rn_distance = random.uniform(0, 2 * dis / 3)
+                        self.graph[node][neighbor]["distance"] = dis - rn_distance
+                    else:
+                        rn_distance = random.uniform(0, dis / 2)
+                        self.graph[node][neighbor]["distance"] = dis + rn_distance
+                    if debug_mode:
+                        print("new distance to Node " + str(neighbor) + ": " + str(
+                            self.graph.get_edge_data(node, neighbor)))
+            else:
+            # events ends, vistors will try to leave
+                if self.graph.nodes(data=True)[node]["identity"] == "visitor":
+                    for neighbor, dis in list(zip(neighbors, distance)):
+                        rn_distance = random.uniform(0, dis / 2)
+                        self.graph[node][neighbor]["distance"] = dis + rn_distance
+                else: # residents will behave as normal
+                    for neighbor, dis in list(zip(neighbors, distance)):
+                        rn1 = random.uniform(0, 1)  # get close to or get away
+                        if rn1 <= 0.5:  # get close to
+                            rn_distance = random.uniform(0,  dis / 2)
+                            self.graph[node][neighbor]["distance"] = dis - rn_distance
+                        else:
+                            rn_distance = random.uniform(0, dis / 2)
+                            self.graph[node][neighbor]["distance"] = dis + rn_distance
+
+
+
         # infectious node will try to get away from neighbours at most of time but rarely get close to
+        # this rate is higher during event for vistors
         else:
             assert state == "I"
             for neighbor, dis in list(zip(neighbors, distance)):
                 if debug_mode:
                     print("old distance: "+str(self.graph.get_edge_data(node,neighbor)))
+                is_danger= event_mode and self.graph.nodes(data=True)[node]["identity"] == "visitor" \
+                           and self.event_start_day <= current_day <= self.event_days+self.event_start_day
+                close_tendency = 0.35 if is_danger else 0.1
                 rn1 = random.uniform(0, 1) #get close to or get away
-                if rn1 <= 0.1: #get close to
+                if rn1 <= close_tendency: #get close to
                     rn_distance = random.uniform(0, dis)
                     self.graph[node][neighbor]["distance"] = dis - rn_distance
                 else:
