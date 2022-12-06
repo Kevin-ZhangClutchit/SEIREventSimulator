@@ -33,11 +33,11 @@ class driver:
         if is_save:
             plt.clf()
             save_fn = './result/Net_epoch_{:d}'.format(num_epochs) + '.png'
-            self.network.graph_draw(verbose_level=1)
+            self.network.graph_draw(current_day=num_epochs,verbose_level=1)
             plt.savefig(save_fn)
         else:
             plt.clf()
-            self.network.graph_draw(verbose_level=1)
+            self.network.graph_draw(current_day=num_epochs,verbose_level=1)
             plt.show()
             # self.network.graph_move()
 
@@ -97,6 +97,6 @@ class driver:
 # "se_rate", "se_distance", "ei_rate", "ir_rate", "nodes_num","event_start_day",
 #                  "event_days"
 
-network_para_s=[0.8, 3, 0.5, 0.15, 40,0,6]
-a = driver(mode="graph",epochs=30,network_parameters=network_para_s)
+network_para_s=[0.8, 3, 0.5, 0.15, 500, 2, 9]
+a = driver(mode="statistical",epochs=35,network_parameters=network_para_s)
 a.driver_main()

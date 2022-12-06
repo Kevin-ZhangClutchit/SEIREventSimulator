@@ -161,7 +161,7 @@ class SEIR_network:
             res = [i for i in edge_list if i[2].get("distance") <= self.se_distance]
         return res
 
-    def graph_draw(self, verbose_level=0):
+    def graph_draw(self, current_day, verbose_level=0):
         G = self.graph
         pos = self.initial_pos
         if verbose_level == 0:
@@ -191,6 +191,14 @@ class SEIR_network:
             nx.draw_networkx_labels(G, pos=pos, labels=resident_dict, font_color="#190033", font_size=8)
             nx.draw_networkx_labels(G, pos=pos, labels=visitor_dict, font_color="#000000", font_size=8)
             # plt.show()
+            if current_day < self.event_start_day:
+                plt.title('Day {:d} '.format(current_day) + '{:d} Day(s) to event'.format(self.event_start_day-current_day))
+            elif self.event_start_day <= current_day <= self.event_start_day + self.event_days:
+                plt.title(
+                    'Day {:d} '.format(current_day) + 'Event Day {:d}'.format(current_day - self.event_start_day + 1))
+            else:
+                plt.title(
+                    'Day {:d} '.format(current_day) + 'After Event')
 
     def graph_move(self, current_day):
 
