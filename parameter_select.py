@@ -90,6 +90,35 @@ def plot_se_rate(x_list, y_list, save=False,
     else:
         plt.close()
 
+def plot_distance(x_list, ylist, save=False,
+                 show=True,
+                 save_dir='parameters/'):
+    fig, ax = plt.subplots()
+
+    plt.xlabel('day')
+    plt.ylabel('distance')
+    #plt.plot(x_list, y_list, marker='o', label='ei_rate', color="#1f78b4")
+    plt.scatter(x_list,ylist[0],alpha=0.5)
+    plt.scatter(x_list, ylist[1], alpha=0.5)
+    plt.scatter(x_list, ylist[2], alpha=0.5)
+    plt.scatter(x_list, ylist[3], alpha=0.5)
+    plt.scatter(x_list, ylist[4], alpha=0.5)
+
+    ax.hlines(7.5, 0, max(x_list) + 0.05,
+              linestyles='dashed', colors=['#1f78b4', '#1f78b4'])
+    #plt.legend()
+
+    # save figure
+    if save:
+        if not os.path.exists(save_dir):
+            os.mkdir(save_dir)
+        save_fn = save_dir + 'distance_simulation.png'
+        plt.savefig(save_fn)
+
+    if show:
+        plt.show()
+    else:
+        plt.close()
 
 nodes_num = 50000
 
@@ -127,7 +156,7 @@ for ei_rate in ei_rate_list:
 
 print(y_list)
 plot_ei_rate(ei_rate_list,y_list,show=False,save=True)
-'''
+
 # Follow are for se_rate
 for se_rate in se_rate_list:
     infected_cnt = 0
@@ -146,3 +175,26 @@ for se_rate in se_rate_list:
 
 print(y_list)
 plot_se_rate(se_rate_list, y_list, show=False, save=True)
+'''
+# Follow are for distance
+dis_list=[]
+sample_list=[]
+for i in range(0,10000):
+    distance_list = [5]
+    current_distance = random.uniform(5,10)
+    for j in range(0, 13):
+        rn1 = random.uniform(0, 1)  # get close to or get away
+        if rn1 <= 0.5:  # get close to
+            rn_distance = random.uniform(0, current_distance / 2)
+            current_distance = current_distance - rn_distance
+        else:
+            rn_distance = random.uniform(0, current_distance / 2)
+            current_distance = current_distance + rn_distance
+        distance_list.append(current_distance)
+    if i in [13,356,1145,4452,7342]:
+        sample_list.append(distance_list)
+    dis_list.append(current_distance)
+
+print(dis_list)
+plot_distance([i for i in range(0, 14)], sample_list,show=False,save=True)
+print(sum(dis_list)/10000)

@@ -36,7 +36,7 @@ Daily mode is the reference group compared with event mode. In daily mode, the v
 | S+Visitor & E+Visitor   | increase the distance to neighbors; Usually, the route of visitors have little contact with local residents, to simplify, we just assume they will go far away; Also, as the rate of visitors is very low in routine mode, we simplify not to judge vistor-vistor edge to increase calculation;Also, due to the property of Omicron and control measurements of current world situation, we assume people have no information about he has been exposed |
 | I+Visitor               | original distance $d$, new distance (most of time) $[d,2d]$, $[0,d]$ (not very frequently); We assume that most people will get away from others when test positive to protect others, but also reserve places for immoral guys. |
 | R+Visitor               | Nothing; As the simulation day is very short compared with time required for a recovered people to become susceptible again, we just neglect them to increase efficiency |
-| S+Resident & E+Resident | original distance $d$, new distance $[d/2,3d/2]$; Residents are either get close (which may cause local spread of covid-19) or get away (normal flow of people), but the respective distance are rather stable |
+| S+Resident & E+Resident | original distance $d$, new distance $[d/2,3d/2]$; Residents are either get close (which may cause local spread of covid-19) or get away (normal flow of people), but the general trend is to have intimate contact with others |
 | I+Resident              | Same as I+Visitor                                            |
 | R+Resident              | Nothing; Similar to R+Visitor                                |
 
