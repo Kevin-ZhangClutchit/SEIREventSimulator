@@ -1,5 +1,10 @@
-# VE444_proj
+# SEIREventSimulator
+This is a course project for UMJI VE444 course.
 
+### Disclaimer
+This is just a rough and out-of-date (since 2023) simulator, so basically it is useless except for practicing with Python and basic concepts in VE444.
+
+### Background Setup
 Several assumptions:
 
 * In event mode, all visitors are coming for the events.
